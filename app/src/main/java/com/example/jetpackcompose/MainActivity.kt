@@ -30,10 +30,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import com.example.jetpackcompose.ui.theme.JetpackComposeTheme
+
+@Composable
+private fun AnimatedButtonVisibility(
+    visible: Boolean,
+    fromRight: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    val offsetMultiplier = if (fromRight) 1 else -1
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInHorizontally(
+            initialOffsetX = { fullWidth -> (fullWidth / 2) * offsetMultiplier },
+            animationSpec = tween(delayMillis = 300)
+        ),
+        exit = slideOutHorizontally(
+            targetOffsetX = { fullWidth -> (fullWidth / 2) * offsetMultiplier },
+            animationSpec = tween(delayMillis = 300)
+        )
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun CommonFloatingActionButton(
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        shape = CircleShape,
+        modifier = modifier.size(56.dp)
+    ) {
+        icon()
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,66 +100,34 @@ class MainActivity : ComponentActivity() {
 fun PlayButton(modifier: Modifier = Modifier): Boolean {
     var isPlaying by remember { mutableStateOf(false) }
     
-    AnimatedVisibility(
-        visible = true,
-        enter = slideInHorizontally(
-            initialOffsetX = { fullWidth -> fullWidth },
-            animationSpec = spring(
-                dampingRatio = 0.8f,
-                stiffness = 300f
-            )
-        ),
-        exit = slideOutHorizontally(
-            targetOffsetX = { fullWidth -> fullWidth },
-            animationSpec = spring(
-                dampingRatio = 0.8f,
-                stiffness = 300f
-            )
-        )
-    ) {
-        FloatingActionButton(
+    AnimatedButtonVisibility(visible = true) {
+        CommonFloatingActionButton(
             onClick = { isPlaying = !isPlaying },
-            shape = CircleShape,
-            modifier = modifier.size(56.dp)
-        ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Warning else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play"
-            )
-        }
+            modifier = modifier,
+            icon = {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Warning else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play"
+                )
+            }
+        )
     }
     return isPlaying
 }
 
 @Composable
 fun DialerButton(isVisible: Boolean = false, modifier: Modifier = Modifier) {
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = slideInHorizontally(
-            initialOffsetX = { fullWidth -> -fullWidth },
-            animationSpec = spring(
-                dampingRatio = 0.8f,
-                stiffness = 300f
-            )
-        ),
-        exit = slideOutHorizontally(
-            targetOffsetX = { fullWidth -> -fullWidth },
-            animationSpec = spring(
-                dampingRatio = 0.8f,
-                stiffness = 300f
-            )
-        )
-    ) {
-        FloatingActionButton(
+    AnimatedButtonVisibility(visible = isVisible, fromRight = false) {
+        CommonFloatingActionButton(
             onClick = { /* TODO: Handle dialer click */ },
-            shape = CircleShape,
-            modifier = modifier.size(56.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Call,
-                contentDescription = "Dial"
-            )
-        }
+            modifier = modifier,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Call,
+                    contentDescription = "Dial"
+                )
+            }
+        )
     }
 }
 
