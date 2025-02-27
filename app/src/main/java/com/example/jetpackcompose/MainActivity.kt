@@ -4,12 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -19,7 +22,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,12 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import com.example.jetpackcompose.ui.theme.JetpackComposeTheme
 
 @Composable
@@ -81,10 +78,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             JetpackComposeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        var isDialingEnabled by remember { mutableStateOf(false) }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            val isPlaying = PlayButton()
-                            if (isPlaying) {
+                            val isPlaying =
+                                PlayButton(onPlayStateChanged = { isDialingEnabled = it })
+                            if (isPlaying && isDialingEnabled) {
                                 Spacer(modifier = Modifier.width(16.dp))
                                 DialerButton(isVisible = true)
                             }
@@ -97,12 +101,15 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PlayButton(modifier: Modifier = Modifier): Boolean {
+fun PlayButton(modifier: Modifier = Modifier, onPlayStateChanged: (Boolean) -> Unit = {}): Boolean {
     var isPlaying by remember { mutableStateOf(false) }
-    
+
     AnimatedButtonVisibility(visible = true) {
         CommonFloatingActionButton(
-            onClick = { isPlaying = !isPlaying },
+            onClick = {
+                isPlaying = !isPlaying
+//                onPlayStateChanged(isPlaying)
+            },
             modifier = modifier,
             icon = {
                 Icon(
