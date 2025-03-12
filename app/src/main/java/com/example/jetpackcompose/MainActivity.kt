@@ -5,7 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
@@ -30,8 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.offset
 import com.example.jetpackcompose.ui.theme.JetpackComposeTheme
 
 @Composable
@@ -44,13 +52,13 @@ private fun AnimatedButtonVisibility(
     AnimatedVisibility(
         visible = visible,
         enter = slideInHorizontally(
-            initialOffsetX = { fullWidth -> (fullWidth / 2) * offsetMultiplier },
-            animationSpec = tween(delayMillis = 300)
-        ),
+            initialOffsetX = { fullWidth -> (fullWidth / 3) * offsetMultiplier },
+            animationSpec = tween(durationMillis = 300)
+        ) + fadeIn(animationSpec = tween(durationMillis = 300)),
         exit = slideOutHorizontally(
-            targetOffsetX = { fullWidth -> (fullWidth / 2) * offsetMultiplier },
-            animationSpec = tween(delayMillis = 300)
-        )
+            targetOffsetX = { fullWidth -> (fullWidth / 3) * offsetMultiplier },
+            animationSpec = tween(durationMillis = 300)
+        ) + fadeOut(animationSpec = tween(durationMillis = 300))
     ) {
         content()
     }
@@ -84,14 +92,33 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        var isDialingEnabled by remember { mutableStateOf(false) }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val isPlaying =
-                                PlayButton(onPlayStateChanged = { isDialingEnabled = it })
-                            if (isPlaying && isDialingEnabled) {
-                                Spacer(modifier = Modifier.width(16.dp))
-                                DialerButton(isVisible = true)
-                            }
+                        var isExpanded by remember { mutableStateOf(false) }
+                        
+                        // Play button with animation
+                        val playButtonOffset by animateDpAsState(
+                            targetValue = if (isExpanded) (-40).dp else 0.dp,
+                            animationSpec = tween(durationMillis = 300)
+                        )
+                        
+                        // Call button with animation - only create when expanded
+                        val callButtonOffset by animateDpAsState(
+                            targetValue = if (isExpanded) 40.dp else 0.dp,
+                            animationSpec = tween(durationMillis = 300)
+                        )
+                        
+                        // Play button
+                        PlayButton(
+                            onPlayStateChanged = { isExpanded = it },
+                            modifier = Modifier.offset(x = playButtonOffset)
+                        )
+                        
+                        // Call button with animation
+                        AnimatedVisibility(
+                            visible = isExpanded,
+                            enter = fadeIn(animationSpec = tween(durationMillis = 150)),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 150))
+                        ) {
+                            DialerButton(modifier = Modifier.offset(x = callButtonOffset))
                         }
                     }
                 }
@@ -104,38 +131,34 @@ class MainActivity : ComponentActivity() {
 fun PlayButton(modifier: Modifier = Modifier, onPlayStateChanged: (Boolean) -> Unit = {}): Boolean {
     var isPlaying by remember { mutableStateOf(false) }
 
-    AnimatedButtonVisibility(visible = true) {
-        CommonFloatingActionButton(
-            onClick = {
-                isPlaying = !isPlaying
-//                onPlayStateChanged(isPlaying)
-            },
-            modifier = modifier,
-            icon = {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Warning else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play"
-                )
-            }
-        )
-    }
+    CommonFloatingActionButton(
+        onClick = {
+            isPlaying = !isPlaying
+            onPlayStateChanged(isPlaying)
+        },
+        modifier = modifier,
+        icon = {
+            Icon(
+                imageVector = if (isPlaying) Icons.Default.Warning else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play"
+            )
+        }
+    )
     return isPlaying
 }
 
 @Composable
-fun DialerButton(isVisible: Boolean = false, modifier: Modifier = Modifier) {
-    AnimatedButtonVisibility(visible = isVisible, fromRight = false) {
-        CommonFloatingActionButton(
-            onClick = { /* TODO: Handle dialer click */ },
-            modifier = modifier,
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Call,
-                    contentDescription = "Dial"
-                )
-            }
-        )
-    }
+fun DialerButton(modifier: Modifier = Modifier) {
+    CommonFloatingActionButton(
+        onClick = { /* TODO: Handle dialer click */ },
+        modifier = modifier,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Call,
+                contentDescription = "Dial"
+            )
+        }
+    )
 }
 
 @Preview(showBackground = true)
@@ -143,10 +166,24 @@ fun DialerButton(isVisible: Boolean = false, modifier: Modifier = Modifier) {
 fun ButtonsPreview() {
     JetpackComposeTheme {
         Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val isPlaying = PlayButton()
-                Spacer(modifier = Modifier.width(16.dp))
-                DialerButton(isVisible = isPlaying)
+            var isExpanded by remember { mutableStateOf(false) }
+            
+            Row(
+                modifier = Modifier.animateContentSize(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PlayButton(
+                    onPlayStateChanged = { isExpanded = it }
+                )
+                
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
+                    exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+                ) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    DialerButton()
+                }
             }
         }
     }
