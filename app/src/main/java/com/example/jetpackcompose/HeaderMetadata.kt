@@ -441,6 +441,68 @@ private fun ButtonSlideInOutAnimation(
         )
     }
 }
+
+@Suppress("UnusedPrivateMember")
+@Composable
+private fun ButtonSlideInOutAnimation1(
+    pageHeaderState: PageHeaderState,
+    playAction: EntityAction,
+) {
+
+    val isPlaying by rememberUpdatedState(newValue = playAction.isPlayingOrBuffering())
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        val playButtonOffset by animateDpAsState(
+            targetValue = if (isPlaying) (-CALL_IN_BUTTON_ANIMATION_TARGET_VALUE).dp else 0.dp,
+            animationSpec = tween(durationMillis = CALL_IN_ANIMATION_DURATION, easing = FastOutSlowInEasing)
+        )
+
+        val callButtonOffset by animateDpAsState(
+            targetValue = if (isPlaying) CALL_IN_BUTTON_ANIMATION_TARGET_VALUE.dp else 0.dp,
+            animationSpec = tween(durationMillis = CALL_IN_ANIMATION_DURATION, easing = FastOutSlowInEasing)
+        )
+
+        val callButtonAlpha by animateFloatAsState(
+            targetValue = if (isPlaying) 1f else 0f,
+            animationSpec = tween(durationMillis = CALL_IN_ANIMATION_DURATION, easing = FastOutSlowInEasing)
+        )
+
+        CallInDialButton(
+            modifier = Modifier
+                .offset { IntOffset(callButtonOffset.roundToPx(), 0) }
+                .alpha(callButtonAlpha)
+        )
+
+        PlayButton(val actionHandler = localActionHandler()
+        val isPlaying = playAction?.isPlayingOrBuffering() == true
+        val isReminderEnabled = state.identifier?.let { rememberIsReminderEnabled(it.entityId).value } == true
+        EpisodePlayButton(
+            state = remember(state, isPlaying, isReminderEnabled) {
+                EntityPlayButtonState(
+                    isUnentitled = state.headerActions.isEntitled.not(),
+                    isLive = state.headerEpisodeUiState.isLive,
+                    isPlaying = isPlaying,
+                    isUpcoming = state.headerEpisodeUiState.isUpcoming,
+                    durationLeft = state.headerEpisodeUiState.durationLeft,
+                    progress = state.headerEpisodeUiState.progress,
+                    hasNotificationsEnabled = isReminderEnabled,
+                    progressState = state.headerEpisodeUiState.progressState,
+                    contentDescription = state.headerMetaData.title,
+                )
+            },
+            onClick = rememberLambda(playAction, reminderAction) { ->
+                when {
+                    playAction != null -> actionHandler.handleAction(playAction)
+                    reminderAction != null -> actionHandler.handleAction(reminderAction)
+                }
+            },
+            modifier = Modifier.offset { IntOffset(playButtonOffset.roundToPx(), 0) },
+        )
+    }
+}
  
 private fun PageHeaderState.shouldUseSimplePlayButton(): Boolean {
     return when {
