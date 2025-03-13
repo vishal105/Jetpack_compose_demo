@@ -367,35 +367,37 @@ fun EpisodePlayButton(
         } else {
             if (state.headerCallInInfoState?.isAiringLive == true /*&& state.headerCallInInfoState.callInPhone != null*/) {
                 Log.d("Hemang", "Hemang is live")
-                //ButtonSlideInOutAnimation(pageHeaderState, playAction)
+                ButtonSlideInOutAnimation1(pageHeaderState, playAction)
             } else {
                 Log.d("Hemang", "Hemang is not live")
+
+                val actionHandler = localActionHandler()
+                val isPlaying = playAction?.isPlayingOrBuffering() == true
+                val isReminderEnabled =
+                    state.identifier?.let { rememberIsReminderEnabled(it.entityId).value } == true
+                EpisodePlayButton(
+                    state = remember(state, isPlaying, isReminderEnabled) {
+                        EntityPlayButtonState(
+                            isUnentitled = state.headerActions.isEntitled.not(),
+                            isLive = state.headerEpisodeUiState.isLive,
+                            isPlaying = isPlaying,
+                            isUpcoming = state.headerEpisodeUiState.isUpcoming,
+                            durationLeft = state.headerEpisodeUiState.durationLeft,
+                            progress = state.headerEpisodeUiState.progress,
+                            hasNotificationsEnabled = isReminderEnabled,
+                            progressState = state.headerEpisodeUiState.progressState,
+                            contentDescription = state.headerMetaData.title,
+                        )
+                    },
+                    onClick = rememberLambda(playAction, reminderAction) { ->
+                        when {
+                            playAction != null -> actionHandler.handleAction(playAction)
+                            reminderAction != null -> actionHandler.handleAction(reminderAction)
+                        }
+                    },
+                    modifier = modifier,
+                )
             }
-            val actionHandler = localActionHandler()
-            val isPlaying = playAction?.isPlayingOrBuffering() == true
-            val isReminderEnabled = state.identifier?.let { rememberIsReminderEnabled(it.entityId).value } == true
-            EpisodePlayButton(
-                state = remember(state, isPlaying, isReminderEnabled) {
-                    EntityPlayButtonState(
-                        isUnentitled = state.headerActions.isEntitled.not(),
-                        isLive = state.headerEpisodeUiState.isLive,
-                        isPlaying = isPlaying,
-                        isUpcoming = state.headerEpisodeUiState.isUpcoming,
-                        durationLeft = state.headerEpisodeUiState.durationLeft,
-                        progress = state.headerEpisodeUiState.progress,
-                        hasNotificationsEnabled = isReminderEnabled,
-                        progressState = state.headerEpisodeUiState.progressState,
-                        contentDescription = state.headerMetaData.title,
-                    )
-                },
-                onClick = rememberLambda(playAction, reminderAction) { ->
-                    when {
-                        playAction != null -> actionHandler.handleAction(playAction)
-                        reminderAction != null -> actionHandler.handleAction(reminderAction)
-                    }
-                },
-                modifier = modifier,
-            )
         }
     }
 }
