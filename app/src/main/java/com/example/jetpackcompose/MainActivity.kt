@@ -46,19 +46,23 @@ import com.example.jetpackcompose.ui.theme.JetpackComposeTheme
 private fun AnimatedButtonVisibility(
     visible: Boolean,
     fromRight: Boolean = true,
+    offsetFraction: Float = 1/3f,
+    durationMillis: Int = 300,
+    enterAnimationSpec: androidx.compose.animation.core.FiniteAnimationSpec<androidx.compose.ui.unit.IntOffset> = tween(durationMillis = durationMillis),
+    exitAnimationSpec: androidx.compose.animation.core.FiniteAnimationSpec<androidx.compose.ui.unit.IntOffset> = tween(durationMillis = durationMillis),
     content: @Composable () -> Unit
 ) {
     val offsetMultiplier = if (fromRight) 1 else -1
     AnimatedVisibility(
         visible = visible,
         enter = slideInHorizontally(
-            initialOffsetX = { fullWidth -> (fullWidth / 3) * offsetMultiplier },
-            animationSpec = tween(durationMillis = 300)
-        ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+            initialOffsetX = { fullWidth -> (fullWidth * offsetFraction).toInt() * offsetMultiplier },
+            animationSpec = enterAnimationSpec
+        ) + fadeIn(animationSpec = tween(durationMillis = durationMillis)),
         exit = slideOutHorizontally(
-            targetOffsetX = { fullWidth -> (fullWidth / 3) * offsetMultiplier },
-            animationSpec = tween(durationMillis = 300)
-        ) + fadeOut(animationSpec = tween(durationMillis = 300))
+            targetOffsetX = { fullWidth -> (fullWidth * offsetFraction).toInt() * offsetMultiplier },
+            animationSpec = exitAnimationSpec
+        ) + fadeOut(animationSpec = tween(durationMillis = durationMillis))
     ) {
         content()
     }
@@ -113,10 +117,10 @@ class MainActivity : ComponentActivity() {
                         )
                         
                         // Call button with animation
-                        AnimatedVisibility(
+                        AnimatedButtonVisibility(
                             visible = isExpanded,
-                            enter = fadeIn(animationSpec = tween(durationMillis = 150)),
-                            exit = fadeOut(animationSpec = tween(durationMillis = 150))
+                            fromRight = true,
+                            durationMillis = 150
                         ) {
                             DialerButton(modifier = Modifier.offset(x = callButtonOffset))
                         }
@@ -176,10 +180,9 @@ fun ButtonsPreview() {
                     onPlayStateChanged = { isExpanded = it }
                 )
                 
-                AnimatedVisibility(
+                AnimatedButtonVisibility(
                     visible = isExpanded,
-                    enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
-                    exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+                    fromRight = false
                 ) {
                     Spacer(modifier = Modifier.width(16.dp))
                     DialerButton()
